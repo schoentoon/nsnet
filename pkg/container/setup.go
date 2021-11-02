@@ -3,7 +3,8 @@ package container
 import (
 	"os"
 	"path/filepath"
-	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 // MountTunDev this will bind mount /dev/net/tun into the container rootfs, this is intended to be ran inside a container BEFORE pivot root/chroot
@@ -12,5 +13,11 @@ func MountTunDev(newroot string) error {
 		return err
 	}
 
-	return syscall.Mount("/dev/net/tun", filepath.Join(newroot, "/dev/net/tun"), "bind", syscall.MS_BIND, "")
+	f, err := os.Create(filepath.Join(newroot, "/dev/net/tun"))
+	if err != nil {
+		return err
+	}
+	f.Close()
+
+	return unix.Mount("/dev/net/tun", filepath.Join(newroot, "/dev/net/tun"), "bind", unix.MS_BIND, "")
 }
