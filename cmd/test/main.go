@@ -6,13 +6,10 @@ import (
 	"runtime"
 	"strconv"
 	"syscall"
-	"time"
 
 	"github.com/docker/docker/pkg/reexec"
+	"github.com/schoentoon/nsnet/pkg/host"
 	"github.com/sirupsen/logrus"
-	"github.com/songgao/water"
-	"github.com/vishvananda/netlink"
-	"github.com/vishvananda/netns"
 
 	"golang.org/x/sys/unix"
 )
@@ -60,73 +57,19 @@ func main() {
 		},
 	}
 
-	err := cmd.Start()
-	if err != nil {
-		panic(err)
-	}
-	time.Sleep(time.Second * 1)
-
-	logrus.Infof("%+v", cmd.Process)
-	logrus.Infof("%+v", cmd.SysProcAttr)
-	ns, err := netns.GetFromPid(cmd.Process.Pid)
+	tun, err := host.New()
 	if err != nil {
 		logrus.Fatal(err)
 	}
-	logrus.Info(ns)
 
-	//go tapInNS(ns)
-	//defer cmd.Wait()
+	tun.Attach(cmd)
 
-	/*err = NSEnter(cmd.Process.Pid)
+	err = cmd.Start()
 	if err != nil {
-		panic(err)
-	}*/
+		logrus.Fatal(err)
+	}
+
+	go tun.ReadLoop()
 
 	cmd.Wait()
-}
-
-func tapInNS(ns netns.NsHandle) {
-	runtime.LockOSThread()
-	defer runtime.UnlockOSThread()
-
-	err := netns.Set(ns)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
-	config := water.Config{
-		DeviceType: water.TAP,
-	}
-	config.Name = "tap0"
-
-	ifce, err := water.New(config)
-	if err != nil {
-		panic(err)
-	}
-	defer ifce.Close()
-}
-
-func tmp() {
-	config := water.Config{
-		DeviceType: water.TAP,
-	}
-	config.Name = "tap0"
-
-	ifce, err := water.New(config)
-	if err != nil {
-		panic(err)
-	}
-	defer ifce.Close()
-
-	link, err := netlink.LinkByName(ifce.Name())
-	if err != nil {
-		panic(err)
-	}
-
-	err = netlink.LinkSetNsPid(link, 58394)
-	if err != nil {
-		panic(err)
-	}
-
-	time.Sleep(time.Minute)
 }

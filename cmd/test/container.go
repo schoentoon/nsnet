@@ -55,6 +55,7 @@ func namespace() {
 	}
 
 	go ifce.ReadLoop()
+	go ifce.WriteLoop()
 
 	cmd := exec.Command("/busybox", "sh")
 	cmd.Stdout = os.Stdout

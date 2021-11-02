@@ -1,16 +1,19 @@
 package container
 
 import (
+	"io"
 	"net"
+	"os"
 
-	"github.com/sirupsen/logrus"
 	"github.com/songgao/water"
 	"github.com/vishvananda/netlink"
-	"golang.org/x/net/ipv4"
 )
 
 type TunDevice struct {
 	iface *water.Interface
+
+	writer io.Writer
+	reader io.Reader
 }
 
 func New() (*TunDevice, error) {
@@ -25,7 +28,9 @@ func New() (*TunDevice, error) {
 	}
 
 	return &TunDevice{
-		iface: ifce,
+		iface:  ifce,
+		writer: os.NewFile(3, "writer"),
+		reader: os.NewFile(4, "reader"),
 	}, nil
 }
 
@@ -64,26 +69,11 @@ func (t *TunDevice) SetupNetwork() error {
 }
 
 func (t *TunDevice) ReadLoop() error {
-	buf := make([]byte, 1500)
-	for {
-		err := t.readPacket(buf)
-		if err != nil {
-			logrus.Error(err)
-		}
-	}
+	_, err := io.Copy(t.writer, t.iface)
+	return err
 }
 
-func (t *TunDevice) readPacket(buf []byte) error {
-	n, err := t.iface.Read(buf)
-	if err != nil {
-		return err
-	}
-
-	header, err := ipv4.ParseHeader(buf[:n])
-	if err != nil {
-		return err
-	}
-
-	logrus.Info(header)
-	return nil
+func (t *TunDevice) WriteLoop() error {
+	_, err := io.Copy(t.iface, t.reader)
+	return err
 }

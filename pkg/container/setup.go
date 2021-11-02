@@ -8,7 +8,7 @@ import (
 
 // MountTunDev this will bind mount /dev/net/tun into the container rootfs, this is intended to be ran inside a container BEFORE pivot root/chroot
 func MountTunDev(newroot string) error {
-	if err := os.MkdirAll("/dev/net", 0700); err != nil {
+	if err := os.MkdirAll(filepath.Join(newroot, "/dev/net"), 0700); err != nil {
 		return err
 	}
 
