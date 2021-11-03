@@ -2,30 +2,12 @@ package main
 
 import (
 	"os"
-	"path/filepath"
-	"runtime"
-	"strconv"
 	"syscall"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/host"
 	"github.com/sirupsen/logrus"
-
-	"golang.org/x/sys/unix"
 )
-
-func NSEnter(pid int) error {
-	logrus.Debugf("NSEnter(%d)", pid)
-	runtime.LockOSThread()
-	path := filepath.Join("/proc", strconv.Itoa(pid), "ns", "net")
-
-	f, err := os.Open(path)
-	if err != nil {
-		return err
-	}
-
-	return unix.Setns(int(f.Fd()), syscall.CLONE_NEWNET)
-}
 
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
@@ -68,6 +50,8 @@ func main() {
 	if err != nil {
 		logrus.Fatal(err)
 	}
+
+	logrus.Infof("Container is at pid: %d", cmd.Process.Pid)
 
 	go tun.ReadLoop()
 

@@ -12,6 +12,7 @@ func (t *TunDevice) ReadLoop() error {
 		err := t.readPacket(buf)
 		if err != nil {
 			logrus.Error(err)
+			return err
 		}
 	}
 }

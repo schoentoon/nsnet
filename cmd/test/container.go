@@ -8,7 +8,6 @@ import (
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/container"
 	"github.com/sirupsen/logrus"
-	"github.com/vishvananda/netns"
 	"golang.org/x/sys/unix"
 )
 
@@ -36,12 +35,6 @@ func namespace() {
 	if err := pivotRoot(wd); err != nil {
 		logrus.Fatal(err)
 	}
-
-	ns, err := netns.Get()
-	if err != nil {
-		logrus.Fatal(err)
-	}
-	logrus.Info(ns)
 
 	ifce, err := container.New()
 	if err != nil {
