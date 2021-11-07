@@ -39,11 +39,11 @@ func New() (out *TunDevice, err error) {
 		}),
 	}
 
-	out.readPipe, out.wReadPipe, err = os.Pipe()
+	out.readPipe, out.wReadPipe, err = Pipe()
 	if err != nil {
 		return nil, err
 	}
-	out.rWritePipe, out.writePipe, err = os.Pipe()
+	out.rWritePipe, out.writePipe, err = Pipe()
 	if err != nil {
 		return nil, err
 	}
