@@ -1,45 +1,31 @@
 package host
 
 import (
-	"github.com/google/gopacket"
-	"github.com/google/gopacket/layers"
 	"github.com/sirupsen/logrus"
+	"gvisor.dev/gvisor/pkg/tcpip/buffer"
+	"gvisor.dev/gvisor/pkg/tcpip/header"
+	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
+	"gvisor.dev/gvisor/pkg/tcpip/network/ipv6"
+	"gvisor.dev/gvisor/pkg/tcpip/stack"
 )
 
-func (t *TunDevice) ReadLoop() error {
+func (t *TunDevice) dispatchLoop() error {
 	buf := make([]byte, MTU)
 	for {
-		err := t.readPacket(buf)
+		n, err := t.readPipe.Read(buf)
 		if err != nil {
 			logrus.Error(err)
 			return err
 		}
-	}
-}
 
-func (t *TunDevice) readPacket(buf []byte) error {
-	n, err := t.readPipe.Read(buf)
-	if err != nil {
-		return err
+		pkb := stack.NewPacketBuffer(stack.PacketBufferOptions{
+			Data: buffer.NewVectorisedView(n, []buffer.View{buffer.NewViewFromBytes(buf)}),
+		})
+		switch header.IPVersion(buf) {
+		case header.IPv4Version:
+			t.dispatcher.DeliverNetworkPacket("", "", ipv4.ProtocolNumber, pkb)
+		case header.IPv6Version:
+			t.dispatcher.DeliverNetworkPacket("", "", ipv6.ProtocolNumber, pkb)
+		}
 	}
-
-	packet := gopacket.NewPacket(buf[:n], layers.LayerTypeIPv4, gopacket.DecodeOptions{
-		Lazy:   true,
-		NoCopy: true,
-	})
-	transport := packet.TransportLayer()
-	if transport == nil {
-		return nil
-	}
-
-	switch transport.LayerType() {
-	case layers.LayerTypeTCP:
-		logrus.Debug(transport.(*layers.TCP))
-		return nil
-	case layers.LayerTypeUDP:
-		return t.handleUDP(packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4), transport.(*layers.UDP))
-	}
-
-	logrus.Debug(packet)
-	return nil
 }

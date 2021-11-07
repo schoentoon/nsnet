@@ -44,7 +44,7 @@ func main() {
 		logrus.Fatal(err)
 	}
 
-	tun.Attach(cmd)
+	tun.AttachToCmd(cmd)
 
 	err = cmd.Start()
 	if err != nil {
@@ -52,8 +52,6 @@ func main() {
 	}
 
 	logrus.Infof("Container is at pid: %d", cmd.Process.Pid)
-
-	go tun.ReadLoop()
 
 	cmd.Wait()
 }

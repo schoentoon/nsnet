@@ -18,4 +18,10 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	gotest.tools/v3 v3.0.3 // indirect
+	gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3
+)
+
+require (
+	github.com/google/btree v1.0.1 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 )
