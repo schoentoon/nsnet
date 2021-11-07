@@ -28,6 +28,7 @@ type TunDevice struct {
 	dispatcher stack.NetworkDispatcher
 
 	udpHandler *udpHandler
+	tcpHandler *tcpHandler
 }
 
 func New() (out *TunDevice, err error) {
@@ -54,6 +55,12 @@ func New() (out *TunDevice, err error) {
 		return nil, err
 	}
 	out.udpHandler = udpHandler
+
+	tcpHandler, err := newTcpForwarder(out)
+	if err != nil {
+		return nil, err
+	}
+	out.tcpHandler = tcpHandler
 
 	tcpipErr := out.stack.CreateNIC(nicID, out)
 	if tcpipErr != nil {
@@ -86,6 +93,7 @@ func (t *TunDevice) Close() error {
 	t.wReadPipe.Close()
 	t.writePipe.Close()
 	t.rWritePipe.Close()
+	t.udpHandler.Close()
 	return nil
 }
 
