@@ -39,7 +39,7 @@ func main() {
 		},
 	}
 
-	tun, err := host.New()
+	tun, err := host.New(host.DefaultOptions())
 	if err != nil {
 		logrus.Fatal(err)
 	}

@@ -15,9 +15,12 @@ import (
 )
 
 const defaultWndSize = 0
-const maxConnAttemps = 1024
-const tcpKeepAliveIdle = time.Second * 60
-const tcpKeepaliveInterval = time.Second * 30
+
+type TCPOptions struct {
+	MaxConns          int
+	KeepaliveIdle     time.Duration
+	KeepaliveInterval time.Duration
+}
 
 type tcpHandler struct {
 	tun *TunDevice
@@ -25,12 +28,12 @@ type tcpHandler struct {
 
 // mostly based on https://github.com/xjasonlyu/tun2socks/blob/main/tunnel/tcp.go
 // and https://github.com/xjasonlyu/tun2socks/blob/main/core/stack/tcp.go
-func newTcpForwarder(t *TunDevice) (*tcpHandler, error) {
+func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 	out := &tcpHandler{
 		tun: t,
 	}
 
-	tcpForwarder := tcp.NewForwarder(t.stack, defaultWndSize, maxConnAttemps, func(r *tcp.ForwarderRequest) {
+	tcpForwarder := tcp.NewForwarder(t.stack, defaultWndSize, opts.MaxConns, func(r *tcp.ForwarderRequest) {
 		var wq waiter.Queue
 		id := r.ID()
 		ep, err := r.CreateEndpoint(&wq)
@@ -40,7 +43,7 @@ func newTcpForwarder(t *TunDevice) (*tcpHandler, error) {
 		}
 		r.Complete(false)
 
-		out.setKeepalive(ep)
+		out.setKeepalive(ep, opts)
 
 		go out.handleTcp(gonet.NewTCPConn(&wq, ep), &id)
 	})
@@ -51,18 +54,19 @@ func newTcpForwarder(t *TunDevice) (*tcpHandler, error) {
 }
 
 func (h *tcpHandler) Close() error {
+	// TODO: We should kill all the connections
 	return nil
 }
 
-func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint) {
+func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint, opts TCPOptions) {
 	ep.SocketOptions().SetKeepAlive(true)
 
-	idle := tcpip.KeepaliveIdleOption(tcpKeepAliveIdle)
+	idle := tcpip.KeepaliveIdleOption(opts.KeepaliveIdle)
 	if err := ep.SetSockOpt(&idle); err != nil {
 		return
 	}
 
-	interval := tcpip.KeepaliveIntervalOption(tcpKeepaliveInterval)
+	interval := tcpip.KeepaliveIntervalOption(opts.KeepaliveInterval)
 	if err := ep.SetSockOpt(&interval); err != nil {
 		return
 	}

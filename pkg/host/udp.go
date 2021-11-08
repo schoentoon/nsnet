@@ -16,6 +16,11 @@ import (
 
 var udpTimeout = time.Second * 60
 
+type UDPOptions struct {
+	Threads   int
+	QueueSize int
+}
+
 type udpHandler struct {
 	pool  sync.Map
 	queue chan udpPacket
@@ -51,9 +56,9 @@ func (p *udpPacket) Key() string {
 		p.ID().RemotePort)
 }
 
-func newUdpForwarder(t *TunDevice, threads int) (*udpHandler, error) {
+func newUdpForwarder(t *TunDevice, opts UDPOptions) (*udpHandler, error) {
 	out := &udpHandler{
-		queue: make(chan udpPacket, 1024),
+		queue: make(chan udpPacket, opts.QueueSize),
 		tun:   t,
 	}
 
@@ -70,14 +75,18 @@ func newUdpForwarder(t *TunDevice, threads int) (*udpHandler, error) {
 			id:   &id,
 		}
 
-		out.queue <- packet
+		select {
+		case out.queue <- packet:
+		default:
+			logrus.Warn("UDP Queue full, dropping packet")
+		}
 
 		return true
 	}
 
 	t.stack.SetTransportProtocolHandler(udp.ProtocolNumber, udpHandler)
 
-	for i := 0; i < threads; i++ {
+	for i := 0; i < opts.Threads; i++ {
 		go out.loop()
 	}
 

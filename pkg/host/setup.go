@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -17,6 +18,25 @@ import (
 
 const MTU = 1500
 const nicID = 1
+
+type Options struct {
+	UDPOptions UDPOptions
+	TCPOptions TCPOptions
+}
+
+func DefaultOptions() Options {
+	return Options{
+		UDPOptions: UDPOptions{
+			QueueSize: 4096,
+			Threads:   16,
+		},
+		TCPOptions: TCPOptions{
+			MaxConns:          2048,
+			KeepaliveIdle:     time.Second * 60,
+			KeepaliveInterval: time.Second * 30,
+		},
+	}
+}
 
 type TunDevice struct {
 	readPipe   io.ReadCloser  // host
@@ -31,7 +51,7 @@ type TunDevice struct {
 	tcpHandler *tcpHandler
 }
 
-func New() (out *TunDevice, err error) {
+func New(opts Options) (out *TunDevice, err error) {
 	out = &TunDevice{
 		stack: stack.New(stack.Options{
 			NetworkProtocols:   []stack.NetworkProtocolFactory{ipv4.NewProtocol, ipv6.NewProtocol},
@@ -50,13 +70,13 @@ func New() (out *TunDevice, err error) {
 
 	out.stack.AddRoute(tcpip.Route{Destination: header.IPv4EmptySubnet, NIC: nicID})
 
-	udpHandler, err := newUdpForwarder(out, 4)
+	udpHandler, err := newUdpForwarder(out, opts.UDPOptions)
 	if err != nil {
 		return nil, err
 	}
 	out.udpHandler = udpHandler
 
-	tcpHandler, err := newTcpForwarder(out)
+	tcpHandler, err := newTcpForwarder(out, opts.TCPOptions)
 	if err != nil {
 		return nil, err
 	}
