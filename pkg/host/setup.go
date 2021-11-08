@@ -48,7 +48,7 @@ func New() (out *TunDevice, err error) {
 		return nil, err
 	}
 
-	out.stack.AddRoute(tcpip.Route{Destination: header.IPv4EmptySubnet, NIC: 1})
+	out.stack.AddRoute(tcpip.Route{Destination: header.IPv4EmptySubnet, NIC: nicID})
 
 	udpHandler, err := newUdpForwarder(out, 4)
 	if err != nil {
