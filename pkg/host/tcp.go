@@ -5,6 +5,7 @@ import (
 	"io"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"gvisor.dev/gvisor/pkg/tcpip"
@@ -20,10 +21,20 @@ type TCPOptions struct {
 	MaxConns          int
 	KeepaliveIdle     time.Duration
 	KeepaliveInterval time.Duration
+	Stats             bool
 }
 
 type tcpHandler struct {
 	tun *TunDevice
+
+	stats *TCPStats
+}
+
+type TCPStats struct {
+	Conns uint32
+
+	SentBytes uint64
+	RecvBytes uint64
 }
 
 // mostly based on https://github.com/xjasonlyu/tun2socks/blob/main/tunnel/tcp.go
@@ -31,6 +42,10 @@ type tcpHandler struct {
 func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 	out := &tcpHandler{
 		tun: t,
+	}
+
+	if opts.Stats {
+		out.stats = new(TCPStats)
 	}
 
 	tcpForwarder := tcp.NewForwarder(t.stack, defaultWndSize, opts.MaxConns, func(r *tcp.ForwarderRequest) {
@@ -43,9 +58,16 @@ func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 		}
 		r.Complete(false)
 
+		var conn net.Conn
+		conn = gonet.NewTCPConn(&wq, ep)
+		if out.stats != nil {
+			atomic.AddUint32(&out.stats.Conns, 1)
+			conn = newTcpTracker(out.stats, conn)
+		}
+
 		out.setKeepalive(ep, opts)
 
-		go out.handleTcp(gonet.NewTCPConn(&wq, ep), &id)
+		go out.handleTcp(conn, &id)
 	})
 
 	t.stack.SetTransportProtocolHandler(tcp.ProtocolNumber, tcpForwarder.HandlePacket)
@@ -56,6 +78,14 @@ func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 func (h *tcpHandler) Close() error {
 	// TODO: We should kill all the connections
 	return nil
+}
+
+func (h *tcpHandler) Stats() *TCPStats {
+	return h.stats
+}
+
+func (t *TunDevice) TCPStats() *TCPStats {
+	return t.tcpHandler.Stats()
 }
 
 func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint, opts TCPOptions) {
@@ -72,7 +102,7 @@ func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint, opts TCPOptions) {
 	}
 }
 
-func (h *tcpHandler) handleTcp(conn *gonet.TCPConn, id *stack.TransportEndpointID) error {
+func (h *tcpHandler) handleTcp(conn net.Conn, id *stack.TransportEndpointID) error {
 	defer conn.Close()
 
 	target, err := net.Dial("tcp", fmt.Sprintf("%s:%d", id.LocalAddress, id.LocalPort))
@@ -96,4 +126,28 @@ func (h *tcpHandler) handleTcp(conn *gonet.TCPConn, id *stack.TransportEndpointI
 
 	wg.Wait()
 	return nil
+}
+
+type tcpTracker struct {
+	net.Conn
+	stats *TCPStats
+}
+
+func newTcpTracker(stats *TCPStats, conn net.Conn) *tcpTracker {
+	return &tcpTracker{
+		Conn:  conn,
+		stats: stats,
+	}
+}
+
+func (t *tcpTracker) Read(b []byte) (int, error) {
+	n, err := t.Conn.Read(b)
+	atomic.AddUint64(&t.stats.RecvBytes, uint64(n))
+	return n, err
+}
+
+func (t *tcpTracker) Write(b []byte) (int, error) {
+	n, err := t.Conn.Write(b)
+	atomic.AddUint64(&t.stats.SentBytes, uint64(n))
+	return n, err
 }

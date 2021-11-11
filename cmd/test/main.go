@@ -39,7 +39,10 @@ func main() {
 		},
 	}
 
-	tun, err := host.New(host.DefaultOptions())
+	opts := host.DefaultOptions()
+	opts.UDPOptions.Stats = true
+	opts.TCPOptions.Stats = true
+	tun, err := host.New(opts)
 	if err != nil {
 		logrus.Fatal(err)
 	}
@@ -54,4 +57,7 @@ func main() {
 	logrus.Infof("Container is at pid: %d", cmd.Process.Pid)
 
 	cmd.Wait()
+
+	logrus.Debugf("%+v", tun.UDPStats())
+	logrus.Debugf("%+v", tun.TCPStats())
 }

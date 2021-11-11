@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -19,12 +20,23 @@ var udpTimeout = time.Second * 60
 type UDPOptions struct {
 	Threads   int
 	QueueSize int
+	Stats     bool
 }
 
 type udpHandler struct {
 	pool  sync.Map
 	queue chan udpPacket
 	tun   *TunDevice
+
+	stats *UDPStats
+}
+
+type UDPStats struct {
+	SentPacket uint32
+	RecvPacket uint32
+
+	SentBytes uint64
+	RecvBytes uint64
 }
 
 type udpPacket struct {
@@ -62,10 +74,19 @@ func newUdpForwarder(t *TunDevice, opts UDPOptions) (*udpHandler, error) {
 		tun:   t,
 	}
 
+	if opts.Stats {
+		out.stats = new(UDPStats)
+	}
+
 	udpHandler := func(id stack.TransportEndpointID, pkt *stack.PacketBuffer) bool {
 		hdr := header.UDP(pkt.TransportHeader().View())
 		if int(hdr.Length()) > pkt.Data().Size()+header.UDPMinimumSize {
 			return true
+		}
+
+		if out.stats != nil {
+			atomic.AddUint32(&out.stats.SentPacket, 1)
+			atomic.AddUint64(&out.stats.SentBytes, uint64(pkt.Size()))
 		}
 
 		// TODO: Check checksum?
@@ -96,6 +117,14 @@ func newUdpForwarder(t *TunDevice, opts UDPOptions) (*udpHandler, error) {
 func (h *udpHandler) Close() error {
 	close(h.queue)
 	return nil
+}
+
+func (h *udpHandler) Stats() *UDPStats {
+	return h.stats
+}
+
+func (t *TunDevice) UDPStats() *UDPStats {
+	return t.udpHandler.Stats()
 }
 
 func (h *udpHandler) loop() {
@@ -198,6 +227,11 @@ func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpoint
 			TOS:      0, /* default */
 		}, pkt); tcpipErr != nil {
 			return errors.New(tcpipErr.String())
+		}
+
+		if h.stats != nil {
+			atomic.AddUint32(&h.stats.RecvPacket, 1)
+			atomic.AddUint64(&h.stats.RecvBytes, uint64(pkt.Size()))
 		}
 	}
 }

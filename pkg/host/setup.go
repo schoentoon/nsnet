@@ -29,11 +29,13 @@ func DefaultOptions() Options {
 		UDPOptions: UDPOptions{
 			QueueSize: 4096,
 			Threads:   16,
+			Stats:     false,
 		},
 		TCPOptions: TCPOptions{
 			MaxConns:          2048,
 			KeepaliveIdle:     time.Second * 60,
 			KeepaliveInterval: time.Second * 30,
+			Stats:             false,
 		},
 	}
 }
