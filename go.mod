@@ -23,5 +23,7 @@ require (
 
 require (
 	github.com/google/btree v1.0.1 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0 // indirect
 )

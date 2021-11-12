@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"time"
 
+	"go.uber.org/multierr"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
@@ -111,12 +112,12 @@ func New(opts Options) (out *TunDevice, err error) {
 }
 
 func (t *TunDevice) Close() error {
-	t.readPipe.Close()
-	t.wReadPipe.Close()
-	t.writePipe.Close()
-	t.rWritePipe.Close()
-	t.udpHandler.Close()
-	return nil
+	return multierr.Combine(t.readPipe.Close(),
+		t.wReadPipe.Close(),
+		t.writePipe.Close(),
+		t.rWritePipe.Close(),
+		t.udpHandler.Close(),
+	)
 }
 
 func (t *TunDevice) AttachToCmd(cmd *exec.Cmd) {

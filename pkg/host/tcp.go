@@ -102,12 +102,12 @@ func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint, opts TCPOptions) {
 	}
 }
 
-func (h *tcpHandler) handleTcp(conn net.Conn, id *stack.TransportEndpointID) error {
+func (h *tcpHandler) handleTcp(conn net.Conn, id *stack.TransportEndpointID) {
 	defer conn.Close()
 
 	target, err := net.Dial("tcp", fmt.Sprintf("%s:%d", id.LocalAddress, id.LocalPort))
 	if err != nil {
-		return err
+		return
 	}
 	defer target.Close()
 
@@ -125,7 +125,6 @@ func (h *tcpHandler) handleTcp(conn net.Conn, id *stack.TransportEndpointID) err
 	}()
 
 	wg.Wait()
-	return nil
 }
 
 type tcpTracker struct {

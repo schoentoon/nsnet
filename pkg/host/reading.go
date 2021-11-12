@@ -1,7 +1,6 @@
 package host
 
 import (
-	"github.com/sirupsen/logrus"
 	"gvisor.dev/gvisor/pkg/tcpip/buffer"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
@@ -9,13 +8,12 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/stack"
 )
 
-func (t *TunDevice) dispatchLoop() error {
+func (t *TunDevice) dispatchLoop() {
 	buf := make([]byte, MTU)
 	for {
 		n, err := t.readPipe.Read(buf)
 		if err != nil {
-			logrus.Error(err)
-			return err
+			return
 		}
 
 		pkb := stack.NewPacketBuffer(stack.PacketBufferOptions{

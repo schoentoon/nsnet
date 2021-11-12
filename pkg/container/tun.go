@@ -68,12 +68,10 @@ func (t *TunDevice) SetupNetwork() error {
 	return netlink.RouteAdd(route)
 }
 
-func (t *TunDevice) ReadLoop() error {
-	_, err := io.Copy(t.writer, t.iface)
-	return err
+func (t *TunDevice) ReadLoop() {
+	_, _ = io.Copy(t.writer, t.iface)
 }
 
-func (t *TunDevice) WriteLoop() error {
-	_, err := io.Copy(t.iface, t.reader)
-	return err
+func (t *TunDevice) WriteLoop() {
+	_, _ = io.Copy(t.iface, t.reader)
 }

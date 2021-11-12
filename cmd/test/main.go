@@ -56,7 +56,10 @@ func main() {
 
 	logrus.Infof("Container is at pid: %d", cmd.Process.Pid)
 
-	cmd.Wait()
+	err = cmd.Wait()
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	logrus.Debugf("%+v", tun.UDPStats())
 	logrus.Debugf("%+v", tun.TCPStats())

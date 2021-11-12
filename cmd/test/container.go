@@ -106,7 +106,7 @@ func mountProc(newroot string) error {
 	flags := 0
 	data := ""
 
-	if err := os.MkdirAll(target, 0755); err != nil {
+	if err := os.MkdirAll(target, 0550); err != nil {
 		return err
 	}
 	if err := unix.Mount(source, target, fstype, uintptr(flags), data); err != nil {

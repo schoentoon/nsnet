@@ -1,7 +1,6 @@
 package host
 
 import (
-	"errors"
 	"fmt"
 	"net"
 	"sync"
@@ -147,7 +146,7 @@ func (h *udpHandler) getOrCreateConn(packet udpPacket) (out *net.UDPConn, err er
 		}
 		val, stored := h.pool.LoadOrStore(key, conn)
 		if stored { // if this is true it was stored elsewhere in the meantime, so we close ours
-			conn.Close()
+			_ = conn.Close()
 		} else {
 			go h.udpForwarder(val.(*net.UDPConn), packet.ID(), packet.Key())
 		}
@@ -171,7 +170,7 @@ func (h *udpHandler) handlePacket(packet udpPacket) error {
 	return err
 }
 
-func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpointID, key string) error {
+func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpointID, key string) {
 	defer conn.Close()
 	defer h.removeConn(key)
 
@@ -180,15 +179,16 @@ func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpoint
 		id.LocalAddress, id.RemoteAddress,
 		header.IPv4ProtocolNumber, false)
 	if tcpipErr != nil {
-		return errors.New(tcpipErr.String())
+		return
 	}
 	defer r.Release()
 
 	for {
-		conn.SetReadDeadline(time.Now().Add(udpTimeout))
+		_ = conn.SetReadDeadline(time.Now().Add(udpTimeout))
+
 		n, err := conn.Read(buf)
 		if err != nil {
-			return err
+			return
 		}
 
 		pkt := stack.NewPacketBuffer(stack.PacketBufferOptions{
@@ -226,7 +226,7 @@ func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpoint
 			TTL:      ttl,
 			TOS:      0, /* default */
 		}, pkt); tcpipErr != nil {
-			return errors.New(tcpipErr.String())
+			return
 		}
 
 		if h.stats != nil {
