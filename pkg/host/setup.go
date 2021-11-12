@@ -117,6 +117,7 @@ func (t *TunDevice) Close() error {
 		t.writePipe.Close(),
 		t.rWritePipe.Close(),
 		t.udpHandler.Close(),
+		t.tcpHandler.Close(),
 	)
 }
 

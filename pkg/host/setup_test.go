@@ -1,15 +1,79 @@
-package main
+package host
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
+	"testing"
 
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/container"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 )
+
+func locateBusybox() (string, error) {
+	return exec.LookPath("busybox")
+}
+
+func setupRootfs(t *testing.T) string {
+	orgBusybox, err := locateBusybox()
+	if err != nil {
+		t.Skipf("Failed to find busybox, skipping: %s", err)
+	}
+
+	dir := t.TempDir()
+
+	f, err := os.OpenFile(filepath.Join(dir, "busybox"), os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		t.Skipf("Failed setupRootfs: %s", err)
+	}
+	defer f.Close()
+
+	org, err := os.Open(orgBusybox)
+	if err != nil {
+		t.Skipf("Failed setupRootfs: %s", err)
+	}
+	defer org.Close()
+
+	_, err = io.Copy(f, org)
+	if err != nil {
+		t.Skipf("Failed setupRootfs: %s", err)
+	}
+
+	return dir
+}
+
+func initialContainerCmd(t *testing.T, dir string) *exec.Cmd {
+	cmd := reexec.Command("namespace")
+	cmd.Env = []string{fmt.Sprintf("DIR=%s", dir)}
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Cloneflags: syscall.CLONE_NEWNS |
+			syscall.CLONE_NEWUTS |
+			syscall.CLONE_NEWIPC |
+			syscall.CLONE_NEWPID |
+			syscall.CLONE_NEWNET |
+			syscall.CLONE_NEWUSER,
+		UidMappings: []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      os.Getuid(),
+				Size:        1,
+			},
+		},
+		GidMappings: []syscall.SysProcIDMap{
+			{
+				ContainerID: 0,
+				HostID:      os.Getgid(),
+				Size:        1,
+			},
+		},
+	}
+	return cmd
+}
 
 func init() {
 	reexec.Register("namespace", namespace)
@@ -22,7 +86,7 @@ func namespace() {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetReportCaller(true)
 
-	wd := "/tmp/newroot"
+	wd := os.Getenv("DIR")
 
 	if err := mountProc(wd); err != nil {
 		logrus.Fatal(err)
@@ -41,6 +105,11 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 	defer ifce.Close()
+	// due to permissions this can't be deleted outside of the container so easily (not without root on the host at least)
+	// so instead we remove the whole /dev/net directory from within the container while destroying the container
+	// do note that we destroy /dev/net on purpose. In case for whatever reason you end up running this function on your host
+	// rather than in a container (please just don't), we nuke /dev/net rather than all of /dev
+	defer os.RemoveAll("/dev/net")
 	defer unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
 
 	err = ifce.SetupNetwork()
