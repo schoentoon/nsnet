@@ -3,6 +3,7 @@ package host
 import (
 	"bytes"
 	"fmt"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -43,17 +44,17 @@ func TestNSLookup(t *testing.T) {
 	err, _, _, udp := containerCommandOutput(t, "nslookup google.com 1.1.1.1")
 	assert.NoError(t, err)
 
-	assert.Greater(t, udp.RecvBytes, uint64(0))
-	assert.Greater(t, udp.RecvPacket, uint32(0))
-	assert.Greater(t, udp.SentBytes, uint64(0))
-	assert.Greater(t, udp.SentPacket, uint32(0))
+	assert.Greater(t, atomic.LoadUint64(&udp.RecvBytes), uint64(0))
+	assert.Greater(t, atomic.LoadUint32(&udp.RecvPacket), uint32(0))
+	assert.Greater(t, atomic.LoadUint64(&udp.SentBytes), uint64(0))
+	assert.Greater(t, atomic.LoadUint32(&udp.SentPacket), uint32(0))
 }
 
 func TestNetcatConnect(t *testing.T) {
 	err, _, tcp, _ := containerCommandOutput(t, "echo 'GET /\n' | nc 1.1.1.1 80")
 	assert.NoError(t, err)
 
-	assert.Greater(t, tcp.RecvBytes, uint64(0))
-	assert.Greater(t, tcp.SentBytes, uint64(0))
-	assert.Equal(t, uint32(1), tcp.Conns)
+	assert.Greater(t, atomic.LoadUint64(&tcp.RecvBytes), uint64(0))
+	assert.Greater(t, atomic.LoadUint64(&tcp.SentBytes), uint64(0))
+	assert.Equal(t, uint32(1), atomic.LoadUint32(&tcp.Conns))
 }

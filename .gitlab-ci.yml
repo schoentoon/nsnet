@@ -10,7 +10,7 @@ test:
     - apt-get install -y busybox-static
     - go install github.com/boumenot/gocover-cobertura@latest
   script:
-    - go test -v -coverprofile coverage.txt ./...
+    - go test -race -v -coverprofile coverage.txt ./...
     - gocover-cobertura < coverage.txt > coverage.xml
   artifacts:
     reports:
