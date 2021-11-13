@@ -1,7 +1,32 @@
 stages:
   - test
 
+test:
+  stage: test
+  image: golang:latest
+  coverage: /^coverage:\s(\d+(?:\.\d+)?%)/
+  before_script:
+    - apt-get update
+    - apt-get install -y busybox-static
+    - go install github.com/boumenot/gocover-cobertura@latest
+  script:
+    - go test -v -coverprofile coverage.txt ./...
+    - gocover-cobertura < coverage.txt > coverage.xml
+  artifacts:
+    reports:
+      cobertura: coverage.xml
+
+golangci-linter:
+  stage: test
+  image:
+    name: golangci/golangci-lint:latest
+    entrypoint: [""]
+  allow_failure: true
+  script:
+    - golangci-lint run --timeout 1h ./...
+
 sast:
   stage: test
 include:
 - template: Security/SAST.gitlab-ci.yml
+- template: Security/Dependency-Scanning.gitlab-ci.yml
