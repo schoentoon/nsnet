@@ -41,7 +41,12 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 	defer ifce.Close()
-	defer unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
+	defer func() {
+		err := unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
+		if err != nil {
+			logrus.Error(err)
+		}
+	}()
 
 	err = ifce.SetupNetwork()
 	if err != nil {

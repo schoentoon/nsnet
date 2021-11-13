@@ -110,7 +110,9 @@ func namespace() {
 	// do note that we destroy /dev/net on purpose. In case for whatever reason you end up running this function on your host
 	// rather than in a container (please just don't), we nuke /dev/net rather than all of /dev
 	defer os.RemoveAll("/dev/net")
-	defer unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
+	defer func() {
+		_ = unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
+	}()
 
 	err = ifce.SetupNetwork()
 	if err != nil {
