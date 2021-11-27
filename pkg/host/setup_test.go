@@ -19,35 +19,35 @@ func locateBusybox() (string, error) {
 	return exec.LookPath("busybox")
 }
 
-func setupRootfs(t *testing.T) string {
+func setupRootfs(tb testing.TB) string {
 	orgBusybox, err := locateBusybox()
 	if err != nil {
-		t.Skipf("Failed to find busybox, skipping: %s", err)
+		tb.Skipf("Failed to find busybox, skipping: %s", err)
 	}
 
-	dir := t.TempDir()
+	dir := tb.TempDir()
 
 	f, err := os.OpenFile(filepath.Join(dir, "busybox"), os.O_CREATE|os.O_WRONLY, 0755)
 	if err != nil {
-		t.Skipf("Failed setupRootfs: %s", err)
+		tb.Skipf("Failed setupRootfs: %s", err)
 	}
 	defer f.Close()
 
 	org, err := os.Open(orgBusybox)
 	if err != nil {
-		t.Skipf("Failed setupRootfs: %s", err)
+		tb.Skipf("Failed setupRootfs: %s", err)
 	}
 	defer org.Close()
 
 	_, err = io.Copy(f, org)
 	if err != nil {
-		t.Skipf("Failed setupRootfs: %s", err)
+		tb.Skipf("Failed setupRootfs: %s", err)
 	}
 
 	return dir
 }
 
-func initialContainerCmd(t *testing.T, dir string) *exec.Cmd {
+func initialContainerCmd(tb testing.TB, dir string) *exec.Cmd {
 	cmd := reexec.Command("namespace")
 	cmd.Env = []string{fmt.Sprintf("DIR=%s", dir)}
 	cmd.SysProcAttr = &syscall.SysProcAttr{

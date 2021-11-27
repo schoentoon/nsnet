@@ -3,22 +3,44 @@ package host
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
-func containerCommandOutput(t *testing.T, command string) (error, string, *TCPStats, *UDPStats) {
-	dir := setupRootfs(t)
+func containerCommandNoOutput(tb testing.TB, command string) error {
+	dir := setupRootfs(tb)
 
-	cmd := initialContainerCmd(t, dir)
+	cmd := initialContainerCmd(tb, dir)
+
+	opts := DefaultOptions()
+	tun, err := New(opts)
+	assert.NoError(tb, err)
+	defer tun.Close()
+
+	tun.AttachToCmd(cmd)
+
+	stdin := bytes.NewBufferString(fmt.Sprintf("%s\n", command))
+
+	cmd.Stdout = io.Discard
+	cmd.Stderr = io.Discard
+	cmd.Stdin = stdin
+
+	return cmd.Run()
+}
+
+func containerCommandOutput(tb testing.TB, command string) (error, string, *TCPStats, *UDPStats) {
+	dir := setupRootfs(tb)
+
+	cmd := initialContainerCmd(tb, dir)
 
 	opts := DefaultOptions()
 	opts.UDPOptions.Stats = true
 	opts.TCPOptions.Stats = true
 	tun, err := New(opts)
-	assert.NoError(t, err)
+	assert.NoError(tb, err)
 	defer tun.Close()
 
 	tun.AttachToCmd(cmd)
