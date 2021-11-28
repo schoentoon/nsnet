@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
+	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -16,6 +19,7 @@ func containerCommandNoOutput(tb testing.TB, command string) error {
 	cmd := initialContainerCmd(tb, dir)
 
 	opts := DefaultOptions()
+	opts.TCPOptions.AllowHostConnections = true
 	tun, err := New(opts)
 	assert.NoError(tb, err)
 	defer tun.Close()
@@ -79,4 +83,37 @@ func TestNetcatConnect(t *testing.T) {
 	assert.Greater(t, atomic.LoadUint64(&tcp.RecvBytes), uint64(0))
 	assert.Greater(t, atomic.LoadUint64(&tcp.SentBytes), uint64(0))
 	assert.Equal(t, uint32(1), atomic.LoadUint32(&tcp.Conns))
+}
+
+func TestConnectToHost(t *testing.T) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Skip(err)
+	}
+	defer listener.Close()
+
+	port := strings.Split(listener.Addr().String(), ":")[1]
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		err := containerCommandNoOutput(t, fmt.Sprintf("echo test | nc 10.0.0.100 %s", port))
+		assert.NoError(t, err)
+		wg.Done()
+	}(&wg)
+
+	conn, err := listener.Accept()
+	if !assert.NoError(t, err) {
+		t.Skipf("Didn't get a connection?? %s", err)
+	}
+
+	buf := make([]byte, 1024)
+	n, err := conn.Read(buf)
+	assert.NoError(t, err)
+
+	assert.Equal(t, []byte("test\n"), buf[:n])
+
+	conn.Close()
+
+	wg.Wait()
 }

@@ -53,22 +53,18 @@ func pickAddress(tb testing.TB, iface net.Interface) net.IP {
 }
 
 func runTcpHostToContainer(b *testing.B, bufsize int) {
-	// as there is currently no straight forward way to connect directly to the host
-	// we try to figure out the outside ip address of the host, and listen and connect
-	// to that directly.
-	iface := pickInterface(b)
-	ip := pickAddress(b, iface)
-
-	listener, err := net.Listen("tcp", fmt.Sprintf("%s:0", ip))
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		b.Skip(err)
 	}
 	defer listener.Close()
 
+	port := strings.Split(listener.Addr().String(), ":")[1]
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
-		err := containerCommandNoOutput(b, fmt.Sprintf("nc %s", listener.Addr()))
+		err := containerCommandNoOutput(b, fmt.Sprintf("nc 10.0.0.100 %s", port))
 		assert.NoError(b, err)
 		wg.Done()
 	}(&wg)
