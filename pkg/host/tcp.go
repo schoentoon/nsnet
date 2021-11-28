@@ -18,16 +18,18 @@ import (
 const defaultWndSize = 0
 
 type TCPOptions struct {
-	MaxConns          int
-	KeepaliveIdle     time.Duration
-	KeepaliveInterval time.Duration
-	Stats             bool
+	MaxConns             int
+	KeepaliveIdle        time.Duration
+	KeepaliveInterval    time.Duration
+	Stats                bool
+	AllowHostConnections bool
 }
 
 type tcpHandler struct {
 	tun *TunDevice
 
-	stats *TCPStats
+	stats                *TCPStats
+	allowHostConnections bool
 }
 
 type TCPStats struct {
@@ -41,7 +43,8 @@ type TCPStats struct {
 // and https://github.com/xjasonlyu/tun2socks/blob/main/core/stack/tcp.go
 func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 	out := &tcpHandler{
-		tun: t,
+		tun:                  t,
+		allowHostConnections: opts.AllowHostConnections,
 	}
 
 	if opts.Stats {
@@ -102,8 +105,14 @@ func (h *tcpHandler) setKeepalive(ep tcpip.Endpoint, opts TCPOptions) {
 	}
 }
 
+var fakeLocal = tcpip.Address([]byte{10, 0, 0, 100})
+
 func (h *tcpHandler) handleTcp(conn net.Conn, id *stack.TransportEndpointID) {
 	defer conn.Close()
+
+	if h.allowHostConnections && id.LocalAddress.To4() == fakeLocal {
+		id.LocalAddress = tcpip.Address([]byte{127, 0, 0, 1})
+	}
 
 	target, err := net.Dial("tcp", fmt.Sprintf("%s:%d", id.LocalAddress, id.LocalPort))
 	if err != nil {

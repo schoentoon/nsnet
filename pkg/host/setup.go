@@ -3,6 +3,7 @@ package host
 import (
 	"errors"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"time"
@@ -71,7 +72,10 @@ func New(opts Options) (out *TunDevice, err error) {
 		return nil, err
 	}
 
-	out.stack.AddRoute(tcpip.Route{Destination: header.IPv4EmptySubnet, NIC: nicID})
+	out.stack.AddRoute(tcpip.Route{
+		Destination: header.IPv4EmptySubnet,
+		NIC:         nicID,
+	})
 
 	udpHandler, err := newUdpForwarder(out, opts.UDPOptions)
 	if err != nil {
@@ -92,7 +96,7 @@ func New(opts Options) (out *TunDevice, err error) {
 
 	tcpipErr = out.stack.AddProtocolAddress(nicID, tcpip.ProtocolAddress{
 		Protocol:          ipv4.ProtocolNumber,
-		AddressWithPrefix: tcpip.Address("10.0.0.1").WithPrefix(),
+		AddressWithPrefix: tcpip.Address(net.IPv4(10, 0, 0, 1).To4()).WithPrefix(),
 	}, stack.AddressProperties{})
 	if tcpipErr != nil {
 		return nil, errors.New(tcpipErr.String())
