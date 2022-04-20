@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/schoentoon/nsnet/pkg/common"
 	"github.com/sirupsen/logrus"
 	"gvisor.dev/gvisor/pkg/tcpip/buffer"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -174,7 +175,7 @@ func (h *udpHandler) udpForwarder(conn *net.UDPConn, id *stack.TransportEndpoint
 	defer conn.Close()
 	defer h.removeConn(key)
 
-	buf := make([]byte, MTU)
+	buf := make([]byte, common.MTU)
 	r, tcpipErr := h.tun.stack.FindRoute(nicID,
 		id.LocalAddress, id.RemoteAddress,
 		header.IPv4ProtocolNumber, false)

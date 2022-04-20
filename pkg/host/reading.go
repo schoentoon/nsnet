@@ -1,6 +1,7 @@
 package host
 
 import (
+	"github.com/schoentoon/nsnet/pkg/common"
 	"gvisor.dev/gvisor/pkg/tcpip/buffer"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
@@ -9,7 +10,7 @@ import (
 )
 
 func (t *TunDevice) dispatchLoop() {
-	buf := make([]byte, MTU)
+	buf := make([]byte, common.MTU)
 	for {
 		n, err := t.bridge.Read(buf)
 		if err != nil {

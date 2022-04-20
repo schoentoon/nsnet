@@ -19,7 +19,6 @@ import (
 	"gvisor.dev/gvisor/pkg/tcpip/transport/udp"
 )
 
-const MTU = 1500
 const nicID = 1
 
 type Options struct {

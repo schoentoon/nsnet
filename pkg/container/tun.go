@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 
+	"github.com/schoentoon/nsnet/pkg/common"
 	"github.com/songgao/water"
 	"github.com/vishvananda/netlink"
 	"go.uber.org/multierr"
@@ -61,6 +62,11 @@ func (t *TunDevice) SetupNetwork() error {
 		return err
 	}
 
+	err = netlink.LinkSetMTU(link, common.MTU)
+	if err != nil {
+		return err
+	}
+
 	route := &netlink.Route{
 		Scope:     netlink.SCOPE_UNIVERSE,
 		LinkIndex: link.Attrs().Index,
@@ -70,9 +76,11 @@ func (t *TunDevice) SetupNetwork() error {
 }
 
 func (t *TunDevice) ReadLoop() {
-	_, _ = io.Copy(t.bridge, t.iface)
+	buf := make([]byte, common.MTU)
+	_, _ = io.CopyBuffer(t.bridge, t.iface, buf)
 }
 
 func (t *TunDevice) WriteLoop() {
-	_, _ = io.Copy(t.iface, t.bridge)
+	buf := make([]byte, common.MTU)
+	_, _ = io.CopyBuffer(t.iface, t.bridge, buf)
 }

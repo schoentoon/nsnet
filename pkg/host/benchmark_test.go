@@ -96,4 +96,10 @@ func BenchmarkTcpHostToContainer(b *testing.B) {
 	b.Run("32KB", func(b *testing.B) { runTcpHostToContainer(b, 1024*32) })
 	b.Run("64KB", func(b *testing.B) { runTcpHostToContainer(b, 1024*64) })
 	b.Run("1MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024) })
+	b.Run("2MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*2) })
+	b.Run("4MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*4) })
+	b.Run("8MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*8) })
+	b.Run("16MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*16) })
+	b.Run("32MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*32) })
+	b.Run("64MB", func(b *testing.B) { runTcpHostToContainer(b, 1024*1024*64) })
 }

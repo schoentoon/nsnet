@@ -1,6 +1,7 @@
 package host
 
 import (
+	"github.com/schoentoon/nsnet/pkg/common"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/buffer"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
@@ -12,7 +13,7 @@ import (
 // physical network doesn't exist, the limit is generally 64k, which
 // includes the maximum size of an IP packet.
 func (t *TunDevice) MTU() uint32 {
-	return MTU
+	return common.MTU
 }
 
 // MaxHeaderLength returns the maximum size the data link (and
