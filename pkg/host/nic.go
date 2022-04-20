@@ -84,7 +84,7 @@ func (t *TunDevice) AddHeader(local, remote tcpip.LinkAddress, protocol tcpip.Ne
 // r.LocalLinkAddress if it is provided.
 func (t *TunDevice) WritePacket(_ stack.RouteInfo, _ tcpip.NetworkProtocolNumber, pkt *stack.PacketBuffer) tcpip.Error {
 	view := buffer.NewVectorisedView(pkt.Size(), pkt.Views())
-	if _, err := t.writePipe.Write(view.ToView()); err != nil {
+	if _, err := t.bridge.Write(view.ToView()); err != nil {
 		return &tcpip.ErrInvalidEndpointState{}
 	}
 	return nil

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
+	"golang.org/x/sys/unix"
 	"gvisor.dev/gvisor/pkg/tcpip"
 	"gvisor.dev/gvisor/pkg/tcpip/header"
 	"gvisor.dev/gvisor/pkg/tcpip/network/ipv4"
@@ -43,10 +44,9 @@ func DefaultOptions() Options {
 }
 
 type TunDevice struct {
-	readPipe   io.ReadCloser  // host
-	wReadPipe  *os.File       // child
-	writePipe  io.WriteCloser // host
-	rWritePipe *os.File       // child
+	bridge io.ReadWriteCloser
+
+	containerFd *os.File
 
 	stack      *stack.Stack
 	dispatcher stack.NetworkDispatcher
@@ -63,14 +63,13 @@ func New(opts Options) (out *TunDevice, err error) {
 		}),
 	}
 
-	out.readPipe, out.wReadPipe, err = Pipe()
+	fds, err := unix.Socketpair(unix.AF_LOCAL, unix.SOCK_STREAM|unix.SOCK_SEQPACKET, 0)
 	if err != nil {
 		return nil, err
 	}
-	out.rWritePipe, out.writePipe, err = Pipe()
-	if err != nil {
-		return nil, err
-	}
+
+	out.bridge = os.NewFile(uintptr(fds[0]), "bridge")
+	out.containerFd = os.NewFile(uintptr(fds[1]), "bridge-container")
 
 	out.stack.AddRoute(tcpip.Route{
 		Destination: header.IPv4EmptySubnet,
@@ -116,15 +115,12 @@ func New(opts Options) (out *TunDevice, err error) {
 }
 
 func (t *TunDevice) Close() error {
-	return multierr.Combine(t.readPipe.Close(),
-		t.wReadPipe.Close(),
-		t.writePipe.Close(),
-		t.rWritePipe.Close(),
+	return multierr.Combine(t.bridge.Close(),
 		t.udpHandler.Close(),
 		t.tcpHandler.Close(),
 	)
 }
 
 func (t *TunDevice) AttachToCmd(cmd *exec.Cmd) {
-	cmd.ExtraFiles = []*os.File{t.wReadPipe, t.rWritePipe}
+	cmd.ExtraFiles = []*os.File{t.containerFd}
 }

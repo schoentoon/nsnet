@@ -7,13 +7,13 @@ import (
 
 	"github.com/songgao/water"
 	"github.com/vishvananda/netlink"
+	"go.uber.org/multierr"
 )
 
 type TunDevice struct {
 	iface *water.Interface
 
-	writer io.Writer
-	reader io.Reader
+	bridge io.ReadWriteCloser
 }
 
 func New() (*TunDevice, error) {
@@ -29,13 +29,14 @@ func New() (*TunDevice, error) {
 
 	return &TunDevice{
 		iface:  ifce,
-		writer: os.NewFile(3, "writer"),
-		reader: os.NewFile(4, "reader"),
+		bridge: os.NewFile(3, "bridge"),
 	}, nil
 }
 
 func (t *TunDevice) Close() error {
-	return t.iface.Close()
+	return multierr.Combine(t.iface.Close(),
+		t.bridge.Close(),
+	)
 }
 
 func (t *TunDevice) SetupNetwork() error {
@@ -69,9 +70,9 @@ func (t *TunDevice) SetupNetwork() error {
 }
 
 func (t *TunDevice) ReadLoop() {
-	_, _ = io.Copy(t.writer, t.iface)
+	_, _ = io.Copy(t.bridge, t.iface)
 }
 
 func (t *TunDevice) WriteLoop() {
-	_, _ = io.Copy(t.iface, t.reader)
+	_, _ = io.Copy(t.iface, t.bridge)
 }

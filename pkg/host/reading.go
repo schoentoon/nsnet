@@ -11,7 +11,7 @@ import (
 func (t *TunDevice) dispatchLoop() {
 	buf := make([]byte, MTU)
 	for {
-		n, err := t.readPipe.Read(buf)
+		n, err := t.bridge.Read(buf)
 		if err != nil {
 			return
 		}
