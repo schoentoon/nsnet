@@ -92,27 +92,15 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 
-	if err := container.MountTunDev(wd); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := pivotRoot(wd); err != nil {
-		logrus.Fatal(err)
-	}
-
 	ifce, err := container.New()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer ifce.Close()
-	// due to permissions this can't be deleted outside of the container so easily (not without root on the host at least)
-	// so instead we remove the whole /dev/net directory from within the container while destroying the container
-	// do note that we destroy /dev/net on purpose. In case for whatever reason you end up running this function on your host
-	// rather than in a container (please just don't), we nuke /dev/net rather than all of /dev
-	defer os.RemoveAll("/dev/net")
-	defer func() {
-		_ = unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
-	}()
+
+	if err := pivotRoot(wd); err != nil {
+		logrus.Fatal(err)
+	}
 
 	err = ifce.SetupNetwork()
 	if err != nil {

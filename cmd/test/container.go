@@ -28,25 +28,15 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 
-	if err := container.MountTunDev(wd); err != nil {
-		logrus.Fatal(err)
-	}
-
-	if err := pivotRoot(wd); err != nil {
-		logrus.Fatal(err)
-	}
-
 	ifce, err := container.New()
 	if err != nil {
 		logrus.Fatal(err)
 	}
 	defer ifce.Close()
-	defer func() {
-		err := unix.Unmount("/dev/net/tun", unix.MNT_DETACH)
-		if err != nil {
-			logrus.Error(err)
-		}
-	}()
+
+	if err := pivotRoot(wd); err != nil {
+		logrus.Fatal(err)
+	}
 
 	err = ifce.SetupNetwork()
 	if err != nil {
