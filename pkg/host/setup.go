@@ -121,5 +121,9 @@ func (t *TunDevice) Close() error {
 }
 
 func (t *TunDevice) AttachToCmd(cmd *exec.Cmd) {
-	cmd.ExtraFiles = []*os.File{t.containerFd}
+	if cmd.ExtraFiles == nil {
+		cmd.ExtraFiles = []*os.File{t.containerFd}
+	} else {
+		cmd.ExtraFiles = append(cmd.ExtraFiles, t.containerFd)
+	}
 }

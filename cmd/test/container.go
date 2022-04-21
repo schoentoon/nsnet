@@ -28,7 +28,7 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 
-	ifce, err := container.New()
+	ifce, err := container.New(0)
 	if err != nil {
 		logrus.Fatal(err)
 	}

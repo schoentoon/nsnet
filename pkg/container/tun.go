@@ -1,6 +1,7 @@
 package container
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"os"
@@ -17,7 +18,12 @@ type TunDevice struct {
 	bridge io.ReadWriteCloser
 }
 
-func New() (*TunDevice, error) {
+func New(fdOffset int) (*TunDevice, error) {
+	bridge := os.NewFile(uintptr(3+fdOffset), "bridge")
+	if bridge == nil {
+		return nil, fmt.Errorf("%d is not a valid file descriptor, wrong offset?", 3+fdOffset)
+	}
+
 	config := water.Config{
 		DeviceType: water.TUN,
 	}
@@ -30,7 +36,7 @@ func New() (*TunDevice, error) {
 
 	return &TunDevice{
 		iface:  ifce,
-		bridge: os.NewFile(3, "bridge"),
+		bridge: bridge,
 	}, nil
 }
 
