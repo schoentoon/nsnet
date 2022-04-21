@@ -60,6 +60,8 @@ func containerCommandOutput(tb testing.TB, command string) (error, string, *TCPS
 }
 
 func TestSetupIPAddress(t *testing.T) {
+	validateHost(t)
+
 	err, out, _, _ := containerCommandOutput(t, "ip a")
 	assert.NoError(t, err)
 
@@ -67,6 +69,8 @@ func TestSetupIPAddress(t *testing.T) {
 }
 
 func TestNSLookup(t *testing.T) {
+	validateHost(t)
+
 	err, _, _, udp := containerCommandOutput(t, "nslookup google.com 1.1.1.1")
 	assert.NoError(t, err)
 
@@ -77,6 +81,8 @@ func TestNSLookup(t *testing.T) {
 }
 
 func TestNetcatConnect(t *testing.T) {
+	validateHost(t)
+
 	err, _, tcp, _ := containerCommandOutput(t, "echo 'GET /\n' | nc 1.1.1.1 80")
 	assert.NoError(t, err)
 
@@ -86,6 +92,8 @@ func TestNetcatConnect(t *testing.T) {
 }
 
 func TestConnectToHost(t *testing.T) {
+	validateHost(t)
+
 	listener, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
 		t.Skip(err)

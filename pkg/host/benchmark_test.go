@@ -90,6 +90,8 @@ func runTcpHostToContainer(b *testing.B, bufsize int) {
 }
 
 func BenchmarkTcpHostToContainer(b *testing.B) {
+	validateHost(b)
+
 	b.Run("4KB", func(b *testing.B) { runTcpHostToContainer(b, 1024*4) })
 	b.Run("8KB", func(b *testing.B) { runTcpHostToContainer(b, 1024*8) })
 	b.Run("16KB", func(b *testing.B) { runTcpHostToContainer(b, 1024*16) })

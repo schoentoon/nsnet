@@ -19,6 +19,18 @@ func locateBusybox() (string, error) {
 	return exec.LookPath("busybox")
 }
 
+func validateHost(tb testing.TB) {
+	_, err := os.Stat("/dev/net/tun")
+	if os.IsNotExist(err) {
+		tb.Skip("/dev/net/tun not found, skipping.")
+	}
+
+	_, err = locateBusybox()
+	if err != nil {
+		tb.Skipf("Failed to find busybox, skipping: %s", err)
+	}
+}
+
 func setupRootfs(tb testing.TB) string {
 	orgBusybox, err := locateBusybox()
 	if err != nil {
