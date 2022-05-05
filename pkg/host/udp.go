@@ -21,12 +21,14 @@ type UDPOptions struct {
 	Threads   int
 	QueueSize int
 	Stats     bool
+	Dialer    func(network, addr string) (net.Conn, error)
 }
 
 type udpHandler struct {
-	pool  sync.Map
-	queue chan udpPacket
-	tun   *TunDevice
+	pool   sync.Map
+	queue  chan udpPacket
+	tun    *TunDevice
+	dialer func(network, addr string) (net.Conn, error)
 
 	stats *UDPStats
 }
@@ -70,8 +72,12 @@ func (p *udpPacket) Key() string {
 
 func newUdpForwarder(t *TunDevice, opts UDPOptions) (*udpHandler, error) {
 	out := &udpHandler{
-		queue: make(chan udpPacket, opts.QueueSize),
-		tun:   t,
+		queue:  make(chan udpPacket, opts.QueueSize),
+		tun:    t,
+		dialer: opts.Dialer,
+	}
+	if out.dialer == nil {
+		out.dialer = net.Dial
 	}
 
 	if opts.Stats {

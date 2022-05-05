@@ -23,10 +23,12 @@ type TCPOptions struct {
 	KeepaliveInterval    time.Duration
 	Stats                bool
 	AllowHostConnections bool
+	Dialer               func(network, addr string) (net.Conn, error)
 }
 
 type tcpHandler struct {
-	tun *TunDevice
+	tun    *TunDevice
+	dialer func(network, addr string) (net.Conn, error)
 
 	stats                *TCPStats
 	allowHostConnections bool
@@ -45,6 +47,10 @@ func newTcpForwarder(t *TunDevice, opts TCPOptions) (*tcpHandler, error) {
 	out := &tcpHandler{
 		tun:                  t,
 		allowHostConnections: opts.AllowHostConnections,
+		dialer:               opts.Dialer,
+	}
+	if out.dialer == nil {
+		out.dialer = net.Dial
 	}
 
 	if opts.Stats {
