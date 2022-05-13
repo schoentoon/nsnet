@@ -8,6 +8,7 @@ import (
 	"github.com/docker/docker/pkg/reexec"
 	"github.com/schoentoon/nsnet/pkg/container"
 	"github.com/sirupsen/logrus"
+	"github.com/syndtr/gocapability/capability"
 	"golang.org/x/sys/unix"
 )
 
@@ -45,6 +46,23 @@ func namespace() {
 
 	go ifce.ReadLoop()
 	go ifce.WriteLoop()
+
+	err = unix.Prctl(unix.PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	caps, err := capability.NewPid2(0)
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	caps.Clear(capability.CAPS | capability.BOUNDING | capability.AMBIENT)
+
+	err = caps.Apply(capability.CAPS | capability.BOUNDING | capability.AMBIENT)
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	cmd := exec.Command("/busybox", "sh")
 	cmd.Stdout = os.Stdout
