@@ -43,7 +43,8 @@ func DefaultOptions() Options {
 }
 
 type TunDevice struct {
-	bridge io.ReadWriteCloser
+	endpoint *tunEndPoint
+	bridge   io.ReadWriteCloser
 
 	containerFd *os.File
 
@@ -60,6 +61,9 @@ func New(opts Options) (out *TunDevice, err error) {
 			NetworkProtocols:   []stack.NetworkProtocolFactory{ipv4.NewProtocol, ipv6.NewProtocol},
 			TransportProtocols: []stack.TransportProtocolFactory{tcp.NewProtocol, udp.NewProtocol},
 		}),
+	}
+	out.endpoint = &tunEndPoint{
+		tun: out,
 	}
 
 	fds, err := unix.Socketpair(unix.AF_LOCAL, unix.SOCK_STREAM|unix.SOCK_SEQPACKET, 0)
@@ -87,7 +91,7 @@ func New(opts Options) (out *TunDevice, err error) {
 	}
 	out.tcpHandler = tcpHandler
 
-	tcpipErr := out.stack.CreateNIC(nicID, out)
+	tcpipErr := out.stack.CreateNIC(nicID, out.endpoint)
 	if tcpipErr != nil {
 		return nil, errors.New(tcpipErr.String())
 	}
