@@ -1,5 +1,7 @@
 # nsnet
 
+[![Gitlab pipeline status](https://gitlab.com/schoentoon/nsnet/badges/master/pipeline.svg)](https://gitlab.com/schoentoon/nsnet)
+
 Yet another way to do networking within namespaces.
 This is however aimed at rootless namespaces and not needing any extra software installed.
 The only requirement is that you must have a tun device (library assumes this is at /dev/net/tun).
