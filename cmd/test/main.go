@@ -1,7 +1,9 @@
 package main
 
 import (
+	"io"
 	"os"
+	"path/filepath"
 	"syscall"
 
 	"github.com/docker/docker/pkg/reexec"
@@ -12,6 +14,17 @@ import (
 func main() {
 	logrus.SetLevel(logrus.DebugLevel)
 	logrus.SetReportCaller(true)
+
+	err := os.MkdirAll("/tmp/newroot", 0775)
+	if err != nil {
+		logrus.Error(err)
+	}
+	// we assume that this busybox binary is a STATIC binary, otherwise none of this will work as the container doesn't have a libc
+	err = cp("/bin/busybox")
+	if err != nil {
+		logrus.Error(err)
+	}
+
 	cmd := reexec.Command("namespace")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -63,4 +76,23 @@ func main() {
 
 	logrus.Debugf("%+v", tun.UDPStats())
 	logrus.Debugf("%+v", tun.TCPStats())
+}
+
+func cp(src string) error {
+	dst := filepath.Join("/tmp/newroot", filepath.Base(src))
+
+	srcf, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcf.Close()
+
+	dstf, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY, 0755)
+	if err != nil {
+		return err
+	}
+	defer dstf.Close()
+
+	_, err = io.Copy(dstf, srcf)
+	return err
 }
