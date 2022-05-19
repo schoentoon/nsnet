@@ -5,9 +5,9 @@
 Yet another way to do networking within namespaces.
 This is however aimed at rootless namespaces and not needing any extra software installed.
 The only requirement is that you must have a tun device (library assumes this is at /dev/net/tun).
-For an example of how to use this library, either have a look at the test program in [./cmd/test/](cmd/test/).
-All the relevant pieces for the host side are in [./pkg/host](pkg/host).
-And all the relevant pieces for the container/namespaced side are in [./pkg/container](pkg/container).
+For an example of how to use this library, either have a look at the test program in [cmd/test](./cmd/test).
+All the relevant pieces for the host side are in [pkg/host](./pkg/host).
+And all the relevant pieces for the container/namespaced side are in [pkg/container](./pkg/container).
 
 ## Usage
 
@@ -23,7 +23,7 @@ if err != nil {
 tun.AttachToCmd(cmd)
 ```
 
-This assumes that cmd is a [https://pkg.go.dev/os/exec#Cmd](exec.Cmd), it's important to call AttachToCmd() before starting this exec.Cmd.
+This assumes that cmd is a [exec.Cmd](https://pkg.go.dev/os/exec#Cmd), it's important to call AttachToCmd() before starting this exec.Cmd.
 An implementation detail, this will add an internal file descriptor under the ExtraFiles field of exec.Cmd.
 Keep this in mind if you're adding file descriptors of your own there.
 
@@ -56,5 +56,5 @@ The SetupNetwork() call will assign an ip address and routes to the appropriate 
 And finally the ReadLoop() and WriteLoop() calls will start the according loops to actually get network traffic going.
 
 All connections made from within this namespace will now go through the internal socket pair it has with the host process.
-Which will decode any TCP/UDP using [https://github.com/google/gvisor/tree/master/pkg/tcpip](the gvisor network stack), to then make the outgoing connections itself using the specified Dialer.
+Which will decode any TCP/UDP using [the gvisor network stack](https://github.com/google/gvisor/tree/master/pkg/tcpip), to then make the outgoing connections itself using the specified Dialer.
 Meaning the host process will get to see all the traffic and could even act as a firewall for the namespaced process.
