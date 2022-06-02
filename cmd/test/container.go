@@ -29,6 +29,11 @@ func namespace() {
 		logrus.Fatal(err)
 	}
 
+	// iperf3 needs /dev/urandom, so we bind mount it
+	if err := bindMount(wd, "/dev/urandom"); err != nil {
+		logrus.Fatal(err)
+	}
+
 	ifce, err := container.New(0)
 	if err != nil {
 		logrus.Fatal(err)
@@ -36,6 +41,11 @@ func namespace() {
 	defer ifce.Close()
 
 	if err := pivotRoot(wd); err != nil {
+		logrus.Fatal(err)
+	}
+
+	// we need /tmp to be able to run iperf3
+	if err := os.Mkdir("/tmp", 0700); err != nil && !os.IsExist(err) {
 		logrus.Fatal(err)
 	}
 
@@ -111,6 +121,30 @@ func pivotRoot(newroot string) error {
 	}
 
 	return nil
+}
+
+func bindMount(newroot, mount string) error {
+	target := filepath.Join(newroot, mount)
+
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		return err
+	}
+
+	stat, err := os.Stat(mount)
+	if err != nil {
+		return err
+	}
+
+	// basically a touch call to create the file, otherwise we can't mount to it.
+	f, err := os.OpenFile(target, os.O_CREATE, stat.Mode())
+	if err != nil {
+		return err
+	}
+	if err = f.Close(); err != nil {
+		return err
+	}
+
+	return unix.Mount(mount, target, "bind", unix.MS_BIND, "")
 }
 
 func mountProc(newroot string) error {
