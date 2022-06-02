@@ -58,3 +58,60 @@ And finally the ReadLoop() and WriteLoop() calls will start the according loops 
 All connections made from within this namespace will now go through the internal socket pair it has with the host process.
 Which will decode any TCP/UDP using [the gvisor network stack](https://github.com/google/gvisor/tree/master/pkg/tcpip), to then make the outgoing connections itself using the specified Dialer.
 Meaning the host process will get to see all the traffic and could even act as a firewall for the namespaced process.
+
+## Benchmarks
+
+All these benchmarks are performed using [a statically compiled iperf3](https://github.com/userdocs/iperf3-static).
+The test programs for this can be found in [./cmd](./cmd), where `test` is using nsnet. And `slirp4netns-test` uses slirp4netns (you will need to have this installed on your system).
+They will both use the MTU specified in [./pkg/common/mtu.go](./pkg/common/mtu.go), which at this time of writing is set at `32 * 1024`.
+Note: In these tests 192.168.100.123 is my local ip address, which I run iperf3 on in server mode. This is just a reliable way to connect to the outside.
+
+### **netns**
+
+```bash
+/ # ./iperf3-amd64 -c 192.168.100.123
+Connecting to host 192.168.100.123, port 5201
+[  8] local 10.0.0.1 port 44194 connected to 192.168.100.123 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  8]   0.00-1.00   sec  1.06 GBytes  9.13 Gbits/sec    0    639 KBytes
+[  8]   1.00-2.00   sec  1.04 GBytes  8.96 Gbits/sec    0    639 KBytes
+[  8]   2.00-3.00   sec  1.00 GBytes  8.59 Gbits/sec    0    639 KBytes
+[  8]   3.00-4.00   sec  1.04 GBytes  8.94 Gbits/sec    0    639 KBytes
+[  8]   4.00-5.00   sec  1023 MBytes  8.58 Gbits/sec    0    639 KBytes
+[  8]   5.00-6.00   sec  1.03 GBytes  8.81 Gbits/sec    0    639 KBytes
+[  8]   6.00-7.00   sec  1.01 GBytes  8.69 Gbits/sec    0    639 KBytes
+[  8]   7.00-8.00   sec  1.04 GBytes  8.97 Gbits/sec    0    639 KBytes
+[  8]   8.00-9.00   sec  1.02 GBytes  8.75 Gbits/sec    0    639 KBytes
+[  8]   9.00-10.00  sec  1.01 GBytes  8.68 Gbits/sec    0    639 KBytes
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  8]   0.00-10.00  sec  10.3 GBytes  8.81 Gbits/sec    0             sender
+[  8]   0.00-10.00  sec  10.3 GBytes  8.81 Gbits/sec                  receiver
+
+iperf Done.
+```
+
+### **slirp4netns**
+
+```bash
+/ # ./iperf3-amd64 -c 192.168.100.123
+Connecting to host 192.168.100.123, port 5201
+[  5] local 10.0.2.100 port 32954 connected to 192.168.100.123 port 5201
+[ ID] Interval           Transfer     Bitrate         Retr  Cwnd
+[  5]   0.00-1.00   sec  1.46 GBytes  12.5 Gbits/sec    0    320 KBytes
+[  5]   1.00-2.00   sec  1.37 GBytes  11.7 Gbits/sec    0    320 KBytes
+[  5]   2.00-3.00   sec  1.50 GBytes  12.9 Gbits/sec    0    320 KBytes
+[  5]   3.00-4.00   sec  1.18 GBytes  10.2 Gbits/sec    0    320 KBytes
+[  5]   4.00-5.00   sec  1.58 GBytes  13.6 Gbits/sec    0    320 KBytes
+[  5]   5.00-6.00   sec  1.54 GBytes  13.2 Gbits/sec    0    320 KBytes
+[  5]   6.00-7.00   sec  1.15 GBytes  9.88 Gbits/sec    0    320 KBytes
+[  5]   7.00-8.00   sec  1.22 GBytes  10.5 Gbits/sec    0    320 KBytes
+[  5]   8.00-9.00   sec   892 MBytes  7.48 Gbits/sec    0    320 KBytes
+[  5]   9.00-10.00  sec  1.64 GBytes  14.1 Gbits/sec    0    320 KBytes
+- - - - - - - - - - - - - - - - - - - - - - - - -
+[ ID] Interval           Transfer     Bitrate         Retr
+[  5]   0.00-10.00  sec  13.5 GBytes  11.6 Gbits/sec    0             sender
+[  5]   0.00-10.00  sec  13.5 GBytes  11.6 Gbits/sec                  receiver
+
+iperf Done.
+```
