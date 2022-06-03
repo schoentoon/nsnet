@@ -22,9 +22,12 @@ func (t *TunDevice) dispatchLoop() {
 		})
 		switch header.IPVersion(buf) {
 		case header.IPv4Version:
-			t.dispatcher.DeliverNetworkPacket("", "", ipv4.ProtocolNumber, pkb)
+			t.dispatcher.DeliverNetworkPacket(ipv4.ProtocolNumber, pkb)
 		case header.IPv6Version:
-			t.dispatcher.DeliverNetworkPacket("", "", ipv6.ProtocolNumber, pkb)
+			t.dispatcher.DeliverNetworkPacket(ipv6.ProtocolNumber, pkb)
 		}
+
+		// it is important that we call DecRef() here, otherwise the memory of pkb will never be freed
+		pkb.DecRef()
 	}
 }

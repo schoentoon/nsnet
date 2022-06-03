@@ -54,5 +54,5 @@ gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b h1:h8qDotaEPuJATrMmW04NCwg7v
 gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gotest.tools/v3 v3.0.3 h1:4AuOwCGf4lLR9u3YOe2awrHygurzhO/HeQ6laiA6Sx0=
 gotest.tools/v3 v3.0.3/go.mod h1:Z7Lb0S5l+klDB31fvDQX8ss/FlKDxtlFlw3Oa8Ymbl8=
-gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3 h1:Uj0PhXnDSgqTXND4UHsH1/Dg/fJzy5WhC7zwV65KVdA=
-gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3/go.mod h1:btyTBPTxT8AFMvW7yctFJ2nPCEDWZLpmKQEZ0gG+bbQ=
+gvisor.dev/gvisor v0.0.0-20220518184840-bc8a8e0c1c8c h1:GSvlVK/S6sgWA5KNwFZ3vcJFHwRl+fJI2mxBqrhFTWY=
+gvisor.dev/gvisor v0.0.0-20220518184840-bc8a8e0c1c8c/go.mod h1:TIvkJD0sxe8pIob3p6T8IzxXunlp6yfgktvTNp+DGNM=

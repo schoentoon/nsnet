@@ -9,13 +9,14 @@ require github.com/vishvananda/netlink v1.1.0
 require (
 	github.com/docker/docker v20.10.10+incompatible
 	github.com/sirupsen/logrus v1.8.1
+	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	golang.org/x/sys v0.0.0-20211101204403-39c9dd37992c
 )
 
 require (
 	github.com/vishvananda/netns v0.0.0-20211101163701-50045581ed74 // indirect
 	gotest.tools/v3 v3.0.3 // indirect
-	gvisor.dev/gvisor v0.0.0-20211103010849-9d6c9e4461c3
+	gvisor.dev/gvisor v0.0.0-20220518184840-bc8a8e0c1c8c
 )
 
 require (
@@ -29,6 +30,5 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

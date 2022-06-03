@@ -76,7 +76,7 @@ func (t *tunEndPoint) ARPHardwareType() header.ARPHardwareType {
 }
 
 // AddHeader adds a link layer header to pkt if required.
-func (t *tunEndPoint) AddHeader(local, remote tcpip.LinkAddress, protocol tcpip.NetworkProtocolNumber, pkt *stack.PacketBuffer) {
+func (t *tunEndPoint) AddHeader(pkt *stack.PacketBuffer) {
 }
 
 // WritePacket writes a packet with the given protocol and route.
@@ -87,7 +87,7 @@ func (t *tunEndPoint) AddHeader(local, remote tcpip.LinkAddress, protocol tcpip.
 // To participate in transparent bridging, a LinkEndpoint implementation
 // should call eth.Encode with header.EthernetFields.SrcAddr set to
 // r.LocalLinkAddress if it is provided.
-func (t *tunEndPoint) WritePacket(_ stack.RouteInfo, _ tcpip.NetworkProtocolNumber, pkt *stack.PacketBuffer) tcpip.Error {
+func (t *tunEndPoint) WritePacket(pkt *stack.PacketBuffer) tcpip.Error {
 	view := buffer.NewVectorisedView(pkt.Size(), pkt.Views())
 	if _, err := t.tun.bridge.Write(view.ToView()); err != nil {
 		return &tcpip.ErrInvalidEndpointState{}
@@ -103,10 +103,10 @@ func (t *tunEndPoint) WritePacket(_ stack.RouteInfo, _ tcpip.NetworkProtocolNumb
 // Right now, WritePackets is used only when the software segmentation
 // offload is enabled. If it will be used for something else, syscall filters
 // may need to be updated.
-func (t *tunEndPoint) WritePackets(route stack.RouteInfo, pkts stack.PacketBufferList, proto tcpip.NetworkProtocolNumber) (int, tcpip.Error) {
+func (t *tunEndPoint) WritePackets(pkts stack.PacketBufferList) (int, tcpip.Error) {
 	n := 0
 	for pkt := pkts.Front(); pkt != nil; pkt = pkt.Next() {
-		if err := t.WritePacket(route, proto, pkt); err != nil {
+		if err := t.WritePacket(pkt); err != nil {
 			break
 		}
 		n++
