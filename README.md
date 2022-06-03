@@ -57,7 +57,7 @@ And finally the ReadLoop() and WriteLoop() calls will start the according loops 
 
 All connections made from within this namespace will now go through the internal socket pair it has with the host process.
 Which will decode any TCP/UDP using [the gvisor network stack](https://github.com/google/gvisor/tree/master/pkg/tcpip), to then make the outgoing connections itself using the specified Dialer.
-Meaning the host process will get to see all the traffic and could even act as a firewall for the namespaced process.
+Meaning the host process will get to see all the traffic and could even act as a firewall for the namespaced process. To upgrade gvisor, please use their [go branch](https://github.com/google/gvisor/tree/go).
 
 ## Benchmarks
 
