@@ -10,7 +10,7 @@ require (
 	github.com/docker/docker v20.10.10+incompatible
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	golang.org/x/sys v0.0.0-20211101204403-39c9dd37992c
+	golang.org/x/sys v0.1.0
 )
 
 require (
